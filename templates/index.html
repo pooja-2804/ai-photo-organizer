@@ -1,0 +1,217 @@
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Photo Organizer</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+            width: 450px;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            color: white;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .add-btn {
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+        }
+
+        .upload-btn {
+            background: linear-gradient(to right, #ff416c, #ff4b2b);
+        }
+
+        #livePreview img {
+            width: 60px;
+            margin: 5px;
+            border-radius: 5px;
+        }
+
+        video {
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        #cameraPopup, #welcomePopup {
+            position: fixed;
+            top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+
+        #cameraPopupContent, #welcomePopupContent {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+        }
+
+        /* Styled popup buttons */
+        .popup-btn {
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            color: white;
+            border-radius: 15px;
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 10px;
+        }
+
+        #liveContainer {
+            display:none;
+            text-align:center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🤖 AI PHOTO ORGANIZER</h2>
+
+    <!-- File Upload Form -->
+    <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data">
+        <div id="fileInputs">
+            <input type="file" name="files" multiple><br>
+        </div>
+        <button type="button" class="add-btn" onclick="addMore()">+ Add More Files</button><br>
+        <button type="submit" class="upload-btn">🚀 Organize Photos</button>
+    </form>
+
+    <hr>
+
+    <!-- Live Camera Button -->
+    <button onclick="openCameraPopup()" class="upload-btn">📷 Live Camera</button>
+
+    <!-- Live preview of captured photos -->
+    <div id="livePreview"></div>
+
+    <!-- Live Camera Container -->
+    <div id="liveContainer">
+        <video id="webcam" width="400" autoplay></video><br>
+        <button onclick="captureLive()" class="upload-btn">📸 Capture</button>
+    </div>
+</div>
+
+<!-- Welcome Popup -->
+<div id="welcomePopup">
+    <div id="welcomePopupContent">
+        <h2>👋 Welcome!</h2>
+        <p>✨ Welcome to Pooja's AI Photo Organizer</p>
+        <button class="popup-btn" onclick="closeWelcomePopup()">Start</button>
+    </div>
+</div>
+
+<!-- Camera Popup -->
+<div id="cameraPopup" style="display:none;">
+    <div id="cameraPopupContent">
+        <h3>📷 Start Camera?</h3>
+        <button class="popup-btn" onclick="startCamera()">OK</button>
+        <button class="popup-btn" style="background: linear-gradient(to right, #ff416c, #ff4b2b);" onclick="closeCameraPopup()">Cancel</button>
+    </div>
+</div>
+
+<script>
+function addMore() {
+    let div = document.getElementById("fileInputs");
+    let input = document.createElement("input");
+    input.type = "file";
+    input.name = "files";
+    input.multiple = true;
+    div.appendChild(input);
+    div.appendChild(document.createElement("br"));
+}
+
+// -------- Welcome Popup ----------
+function closeWelcomePopup() {
+    document.getElementById("welcomePopup").style.display = "none";
+}
+
+// -------- Camera Popup ----------
+function openCameraPopup() {
+    document.getElementById("cameraPopup").style.display = "flex";
+}
+function closeCameraPopup() {
+    document.getElementById("cameraPopup").style.display = "none";
+}
+
+// -------- Live Camera ----------
+let videoStream = null;
+function startCamera() {
+    closeCameraPopup();
+    const video = document.getElementById('webcam');
+    document.getElementById("liveContainer").style.display = "block";
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => {
+        video.srcObject = stream;
+        videoStream = stream;
+    })
+    .catch(err => { alert("Camera access denied or not available."); });
+}
+
+// -------- Capture & Close Camera (One-Shot) ----------
+function captureLive() {
+    const video = document.getElementById('webcam');
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob(blob => {
+        const file = new File([blob], "live_capture_" + Date.now() + ".jpg", {type:"image/jpeg"});
+
+        // Add file to form
+        const input = document.createElement("input");
+        input.type = "file";
+        input.name = "files";
+        input.files = createFileList(file);
+        input.style.display = "none";
+        document.getElementById("fileInputs").appendChild(input);
+
+        // Show preview
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(file);
+        document.getElementById("livePreview").appendChild(img);
+
+        // Stop camera immediately
+        if(videoStream){
+            videoStream.getTracks().forEach(track => track.stop());
+            videoStream = null;
+        }
+        document.getElementById("liveContainer").style.display = "none";
+    }, "image/jpeg");
+}
+
+// Helper to create FileList from single file
+function createFileList(file){
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    return dataTransfer.files;
+}
+</script>
+
+</body>
+</html>

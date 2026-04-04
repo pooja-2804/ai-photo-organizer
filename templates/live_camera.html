@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Live Camera - AI Photo Organizer</title>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            color: white;
+            font-size: 15px;
+            cursor: pointer;
+            background: linear-gradient(to right, #ff416c, #ff4b2b);
+        }
+
+        video {
+            border-radius: 15px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>📷 Live Camera</h2>
+    <video id="webcam" width="400" autoplay></video><br>
+    <button onclick="capture()">📸 Capture</button>
+</div>
+
+<script>
+const video = document.getElementById('webcam');
+
+navigator.mediaDevices.getUserMedia({ video: true })
+.then(stream => { video.srcObject = stream; })
+.catch(err => { alert("Camera access denied or not available."); });
+
+function capture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob(blob => {
+        const formData = new FormData();
+        formData.append("file", blob, "live_capture.jpg");
+
+        // Send to Flask route /capture_live and redirect to gallery
+        fetch("/capture_live", {
+            method: "POST",
+            body: formData
+        })
+        .then(res => res.text())
+        .then(html => {
+            document.open();
+            document.write(html);
+            document.close();
+        })
+        .catch(err => {
+            alert("Error processing capture");
+        });
+    }, 'image/jpeg');
+}
+</script>
+</body>
+</html>
