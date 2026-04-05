@@ -1,4 +1,3 @@
-
 from flask import Flask, render_template, request
 import os
 from deepface import DeepFace
@@ -139,4 +138,4 @@ def capture_live():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0",port=10000,debug=True)
