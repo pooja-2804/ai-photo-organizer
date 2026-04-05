@@ -46,12 +46,14 @@ def upload():
 
             if len(result) > 0 and len(result[0]) > 0:
                 identity_path = result[0]['identity'][0]
+
                 if "dhoni" in identity_path.lower():
                     label = "dhoni"
                 elif "pvsindhu" in identity_path.lower():
                     label = "pvsindhu"
 
-        except:
+        except Exception as e:
+            print("Face Find Error:", e)
             label = "unknown"
 
         try:
@@ -61,7 +63,9 @@ def upload():
                 enforce_detection=False
             )
             emotion = analysis[0]['dominant_emotion']
-        except:
+
+        except Exception as e:
+            print("Emotion Error:", e)
             emotion = "unknown"
 
         img_data = {"path": "/" + filepath, "emotion": emotion}
@@ -81,7 +85,6 @@ def upload():
     )
 
 
-# --------- Live Camera ----------
 @app.route("/live_camera")
 def live_camera():
     return render_template("live_camera.html")
@@ -90,6 +93,7 @@ def live_camera():
 @app.route("/capture_live", methods=["POST"])
 def capture_live():
     file = request.files.get("file")
+
     if not file:
         return "No file received", 400
 
@@ -104,20 +108,35 @@ def capture_live():
     emotion = "unknown"
 
     try:
-        result = DeepFace.find(img_path=filepath, db_path=DATASET_PATH, enforce_detection=False, model_name="Facenet")
+        result = DeepFace.find(
+            img_path=filepath,
+            db_path=DATASET_PATH,
+            enforce_detection=False,
+            model_name="Facenet"
+        )
+
         if len(result) > 0 and len(result[0]) > 0:
             identity_path = result[0]['identity'][0]
+
             if "dhoni" in identity_path.lower():
                 label = "dhoni"
             elif "pvsindhu" in identity_path.lower():
                 label = "pvsindhu"
-    except:
+
+    except Exception as e:
+        print("Live Face Error:", e)
         label = "unknown"
 
     try:
-        analysis = DeepFace.analyze(img_path=filepath, actions=['emotion'], enforce_detection=False)
+        analysis = DeepFace.analyze(
+            img_path=filepath,
+            actions=['emotion'],
+            enforce_detection=False
+        )
         emotion = analysis[0]['dominant_emotion']
-    except:
+
+    except Exception as e:
+        print("Live Emotion Error:", e)
         emotion = "unknown"
 
     img_data = {"path": "/" + filepath, "emotion": emotion}
@@ -137,5 +156,6 @@ def capture_live():
     )
 
 
+# ❌ REMOVE debug mode for production
 if __name__ == "__main__":
-    app.run(host="0.0.0.0",port=10000,debug=True)
+    app.run(host="0.0.0.0", port=10000)
